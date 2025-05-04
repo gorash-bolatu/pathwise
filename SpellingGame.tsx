@@ -143,6 +143,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                     <input
                         ref={inputRef}
                         type="text"
+                        placeholder="Type the word here..."
                         className="form-control my-3"
                         value={input}
                         onChange={(e) => {
