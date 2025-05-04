@@ -4,61 +4,71 @@ import { GameProps, GameResult } from '../../../interfaces/GameInterfaces';
 import './blank_game.css';
 import './shake_anim.css';
 
-interface BlankFillData {
-    sentence_list: Array<{
-        parts: Array<{ type: 'text' | 'blank'; content: string }>;
-        wordList: string[];
-        correctWords: string[];
-    }>;
-}
-
 const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
-    // State to manage sentences, selected words, and game feedback
-    const typedData = data as BlankFillData; // Type assertion (temporary fix)
-    const [queue, setQueue] = useState(typedData.sentence_list || []);
+    // Ensure data matches the expected shape (BlankFillData) before using it
+    const isValidData = Array.isArray(data.sentence_list) && data.sentence_list.every((sentence: { parts: any; wordList: any; correctWords: any; }) =>
+        Array.isArray(sentence.parts) &&
+        Array.isArray(sentence.wordList) &&
+        Array.isArray(sentence.correctWords)
+    );
+
+    if (!isValidData && data.sentence_list.length === 0) {
+        return <div>No sentences provided for the game!</div>;
+    }
+
+    const [queue, setQueue] = useState(data.sentence_list || []);
     const [selectedWords, setSelectedWords] = useState<(string | null)[]>([]);
     const [availableWords, setAvailableWords] = useState<string[]>([]);
     const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
     const [completed, setCompleted] = useState(false);
     const [results, setResults] = useState<{ word: string; correct: boolean }[]>([]);
-    const [showHints, setShowHints] = useState<boolean>(false);
 
     // Reference to track incorrect attempts for each word
     const attemptCounts = useRef<Record<string, number>>({});
-    const difficulty = settings?.difficulty ?? 'normal';
 
-    // Initialize attempt counts when the game starts or when sentences change
+    type Difficulty = 'easy' | 'normal' | 'hard' | 'no-hints';
+    const difficulty: Difficulty = settings?.difficulty ?? 'normal';
+    const hintThresholds = {
+        'easy': 1,
+        'normal': 2,
+        'hard': 3,
+        'no-hints': Infinity
+    };
+    const revealThreshold = hintThresholds[difficulty]!;
+
+    const showHints = (word: string) => {
+        return results.some(r => r.word === word && r.correct === false);
+    }
+
+    // Track if the game has started to prevent reinitialization on sentence change
+    const isGameStarted = useRef(false);
+
+    // Initialize attempt counts only when the game starts (not on each sentence change)
     useEffect(() => {
-        if (queue.length > 0) {
-            const initialCounts = queue[0].wordList.reduce((acc, word) => {
+        if (queue.length > 0 && !isGameStarted.current) {
+            const initialCounts = queue[0].wordList.reduce((acc: { [x: string]: number; }, word: string | number) => {
                 acc[word] = 0; // Start with 0 incorrect attempts for each word
                 return acc;
             }, {} as Record<string, number>);
             attemptCounts.current = initialCounts;
-        }
-    }, [queue]);
 
-    // Adjust hint visibility based on difficulty setting
-    useEffect(() => {
-        if (difficulty === 'no-hints') {
-            setShowHints(false); // Hide hints for no-hints difficulty
-        } else {
-            setShowHints(true); // Show hints for other difficulty settings
+            // Set the flag to true after initialization
+            isGameStarted.current = true;
         }
-    }, [difficulty]);
+    }, [queue]); // Runs only once when the game starts
 
     // Handle word selection for blanks
     const handleWordSelect = (word: string) => {
-        const firstEmptyIdx = selectedWords.findIndex(sw => sw === null);
+        const firstEmptyIdx = selectedWords.findIndex((sw: null) => sw === null);
         if (firstEmptyIdx === -1) return;
 
         // Place selected word into the first empty blank and update available words
-        setSelectedWords(prev => {
+        setSelectedWords((prev: any) => {
             const newSelected = [...prev];
             newSelected[firstEmptyIdx] = word;
             return newSelected;
         });
-        setAvailableWords(prev => prev.filter(w => w !== word));
+        setAvailableWords((prev: any[]) => prev.filter((w: string) => w !== word));
     };
 
     // Handle word deselection (undo selecting a word)
@@ -67,12 +77,12 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
         if (!word) return;
 
         // Remove the word from selected blanks and re-add it to available words
-        setSelectedWords(prev => {
+        setSelectedWords((prev: any) => {
             const newSelected = [...prev];
             newSelected[index] = null;
             return newSelected;
         });
-        setAvailableWords(prev => [...prev, word]);
+        setAvailableWords((prev: any) => [...prev, word]);
     };
 
     // Handle the logic when the player checks their answers
@@ -81,22 +91,20 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
         if (!currentSentence || selectedWords.some(w => w === null)) return; // Ensure all blanks are filled
 
         // Validate the selected words against the correct answers
-        const validation = selectedWords.map((word, index) => ({
+        const validation = selectedWords.map((word: any, index: string | number) => ({
             word: word!,
             correct: word === currentSentence.correctWords[index]
         }));
 
         // Check if all answers are correct
-        const allCorrect = validation.every(v => v.correct);
+        const allCorrect = validation.every((v: { correct: any; }) => v.correct);
         setFeedback(allCorrect ? 'correct' : 'wrong');
-        setResults(prev => [...prev, ...validation]);
+        setResults((prev: any) => [...prev, ...validation]);
 
         // Update incorrect attempt counts and re-add the sentence to the queue if incorrect
-        validation.forEach(v => {
+        validation.forEach((v: { correct: any; word: string | number; }) => {
             if (!v.correct) {
-                const newCounts = { ...attemptCounts.current };
-                newCounts[v.word] = (newCounts[v.word] || 0) + 1;
-                attemptCounts.current = newCounts;
+                attemptCounts.current[v.word] = (attemptCounts.current[v.word] || 0) + 1;
             }
         });
 
@@ -116,9 +124,9 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     // Complete the game and calculate the final result
     const completeGame = () => {
         const gameResult: GameResult = {
-            successRate: results.length === 0 ? 0 : (results.filter(r => r.correct).length / results.length) * 100,
-            completedWords: [...new Set(results.filter(r => r.correct).map(r => r.word))] as string[],
-            failedWords: [...new Set(results.filter(r => !r.correct).map(r => r.word))] as string[],
+            successRate: results.length === 0 ? 0 : (results.filter((r: { correct: any; }) => r.correct).length / results.length) * 100,
+            completedWords: [...new Set(results.filter((r: { correct: any; }) => r.correct).map((r: { word: any; }) => r.word))] as string[],
+            failedWords: [...new Set(results.filter((r: { correct: any; }) => !r.correct).map((r: { word: any; }) => r.word))] as string[],
             rawLog: results
         };
 
@@ -134,18 +142,18 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
             {!completed ? (
                 <div className={`gamearea ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}>
                     <div className="sentence mb-4">
-                        {currentSentence.parts.map((part, i) => (
+                        {currentSentence.parts.map((part: { type: string; content: any; }, i: number) => (
                             part.type === 'text' ? (
                                 <span key={i}>{part.content}</span>
                             ) : (
                                 <span
                                     key={i}
                                     className={`blank ${selectedWords[i] ? 'filled' : 'empty'} 
-                                    ${showHints && attemptCounts.current[currentSentence?.wordList[i]] >= 2 ? 'hint' : ''}`}
+                                    ${attemptCounts.current[currentSentence?.wordList[i]] >= revealThreshold && showHints(attemptCounts.current[currentSentence?.wordList[i]]) ? 'hint' : ''}`}
                                     style={{ width: selectedWords[i] ? `${selectedWords[i].length}ch` : 'auto' }}
                                     onClick={() => handleWordDeselect(i)}
                                 >
-                                    {showHints && attemptCounts.current[currentSentence.wordList[i]] >= 2
+                                    {attemptCounts.current[currentSentence?.wordList[i]] >= revealThreshold && showHints(attemptCounts.current[currentSentence?.wordList[i]])
                                         ? currentSentence.wordList[i]
                                         : selectedWords[i] || ''}
                                 </span>
@@ -154,7 +162,7 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                     </div>
 
                     <div className="word-bank mb-3">
-                        {availableWords.map((word, i) => (
+                        {availableWords.map((word: string, i: any) => (
                             <button
                                 key={i}
                                 className="btn btn-outline-primary m-1"
@@ -168,7 +176,7 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                     <button
                         className="btn btn-primary"
                         onClick={handleCheck}
-                        disabled={selectedWords.some(w => !w)}
+                        disabled={selectedWords.some((w: any) => !w)}
                     >
                         Check
                     </button>
@@ -178,7 +186,7 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                 <div className="alert alert-success mt-4">
                     <h5>🎉 Game Completed!</h5>
                     <p>Success Rate: {(
-                        (results.filter(r => r.correct).length / results.length) * 100
+                        (results.filter((r: { correct: any; }) => r.correct).length / results.length) * 100
                     ).toFixed(0)}%</p>
                 </div>
             )}
