@@ -71,6 +71,8 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     // Reference to the input field for auto focus
     const inputRef = useRef<HTMLInputElement>(null);
 
+    const [feedback, setFeedback] = useState<null | 'correct' | 'wrong'>(null); // результат раунда (для отрисовки обратной связи)
+
     // от ильи:
     // там я еще hint добавить думал
     const currentHint = queue[0]?.hint;
@@ -101,29 +103,33 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
         if (!isCorrect)
             nextQueue.push(queue[0]); // запихнуть в конец очереди если неправильно написано
 
-        // Move to next word if available
-        if (nextQueue.length > 0) {
-            setQueue(nextQueue);
-            setInput('');
-        } else {
-            // Game is complete, calculate summary
+        setFeedback(isCorrect ? 'correct' : 'wrong');
+        setTimeout(() => {
+            // Move to next word if available
+            if (nextQueue.length > 0) {
+                setQueue(nextQueue);
+                setInput('');
+            } else {
+                // Game is complete, calculate summary
 
-            const distinct = [...new Set(newResults.map(obj => obj.word))] as string[];
-            const distinctIncorrect = [...new Set(newResults.filter(r => !r.correct).map(obj => obj.word))] as string[];
-            const percentage = newResults.length === 0 ? 0 : 100 - (newResults.filter(r => !r.correct).length / newResults.length) * 100;
+                const distinct = [...new Set(newResults.map(obj => obj.word))] as string[];
+                const distinctIncorrect = [...new Set(newResults.filter(r => !r.correct).map(obj => obj.word))] as string[];
+                const percentage = newResults.length === 0 ? 0 : 100 - (newResults.filter(r => !r.correct).length / newResults.length) * 100;
 
-            const gameResult: GameResult = {
-                successRate: percentage,
-                completedWords: distinct,
-                failedWords: distinctIncorrect,
-                rawLog: newResults
-            };
-            console.log("SpellingGame GameResult:", gameResult);
+                const gameResult: GameResult = {
+                    successRate: percentage,
+                    completedWords: distinct,
+                    failedWords: distinctIncorrect,
+                    rawLog: newResults
+                };
+                console.log("SpellingGame GameResult:", gameResult);
 
-            setCompleted(true);
-            onComplete(gameResult); // Notify parent of completion
-        }
-    };
+                setCompleted(true);
+                onComplete(gameResult); // Notify parent of completion
+            }
+            setFeedback(null);
+        }, 500);
+    }
 
     return (
         <BaseGame title="Spelling game" description="Guess the word and type it below">
@@ -145,7 +151,8 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                         type="text"
                         placeholder="Type the word here..."
                         // className="form-control my-3"
-                        className={`form-control my-3 ${feedback === 'correct' ? 'border-success' : feedback === 'wrong' ? 'border-danger' : ''}`}
+                        // TODO? анимация (обратная связь)
+                        className={`form-control my-3 ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}
                         value={input}
                         onChange={(e) => {
                             setInput(e.target.value.trim().toUpperCase());
