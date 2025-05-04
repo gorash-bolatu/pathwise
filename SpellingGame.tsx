@@ -2,13 +2,37 @@ import React, { useEffect, useRef, useState } from 'react';
 import BaseGame from '../BaseGame';
 import { GameProps, GameResult } from '../../../interfaces/GameInterfaces';
 
-// сделай реализацию где игра принимает настройки
-const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
+/**
+ * jsdoc от друга ильи
+ * 
+ * Props:
+ * @component
+ * @param {Object} props - Component props
+ * @param {Object} props.data - The game data containing a list of words and their hints. Format: `{ word: string, hint: string }[]`.
+ * @param {Object[]} [props.settings] - Optional settings object. Expected to include a `difficulty` key with values such as "easy", "medium", or "hard".
+ * @param {function(GameResult): void} props.onComplete - Callback function triggered when the game finishes, returning a `GameResult` object.
+*
+* State:
+* - Tracks user input, current word index, input count, and game results.
+ * - Dynamically adjusts when to reveal the actual word based on difficulty and mistype count.
+*
+* Usage:
+ * ```tsx
+ * <SpellingGame
+ *   data={{ word_list: [{ word: 'apple', hint: 'A fruit' }] }}
+ *   settings={ difficulty: 'hard' }
+ *   onComplete={(result) => spellingGameHandler(result)}
+ * />
+ * ```
+*/
+const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameProps) => {
     console.log("SpellingGame data:", data);
 
     // Extract the list of words from the game data (fallback to empty array)
     const words = data?.word_list || [];
 
+    // илья:
+    // сделай реализацию где игра принимает настройки
     // настройка, отвечающая за эту самую сложность, которую ты получил бы из массива параметров settings
     const difficulty = settings?.difficulty as string ?? 'normal';
 
@@ -47,7 +71,8 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     // Get the current word in uppercase
     const currentWord: string = words[index]?.word?.toUpperCase() ?? '';
 
-    // там я еще hint добавить думал
+    // илья:
+        // там я еще hint добавить думал
     const currentHint = words[index]?.hint;
 
     // Auto-focus the input on each new word
