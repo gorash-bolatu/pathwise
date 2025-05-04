@@ -9,7 +9,7 @@ type BaseGameProps = {
 const BaseGame: React.FC<BaseGameProps> = ({ title, description, children }) => {
     return (
         <div className="p-4 border rounded shadow text-center" style={{ maxWidth: 600, margin: 'auto' }}>
-            <h4 className="mb-3">{title}</h4>
+            <h4 className="mb-3">{title.toUpperCase()}</h4>
             {description && <p className="text-muted">{description}</p>}
             <div className="mt-4">
                 {children}

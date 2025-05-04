@@ -154,7 +154,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
                 <div className="alert alert-success mt-4">
                     <h5>🎉 Game Completed!</h5>
                     <p>Success Rate: {(
-                        100 - (results.filter(r => !r.correct).length / results.length) * 100,
+                        100 - (results.filter(r => !r.correct).length / results.length) * 100
                     ).toFixed(0)}%</p>
                 </div>
             )}
