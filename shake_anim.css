@@ -1,3 +1,16 @@
+.input-box {
+  transition: box-shadow 0.3s ease;
+}
+
+.input-box.correct {
+  box-shadow: 0 0 10px 2px #4CAF50;
+}
+
+.input-box.wrong {
+  box-shadow: 0 0 10px 2px #F44336;
+  animation: shake 0.3s ease;
+}
+
 /* Shake animation for incorrect answer */
 @keyframes shake {
   0% { transform: translateX(0); }

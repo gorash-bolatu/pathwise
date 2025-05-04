@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BaseGame from '../BaseGame';
 import { GameProps, GameResult } from '../../../interfaces/GameInterfaces';
+import './SpellingGame.css'; // todo?
 
 /**
  * jsdoc от друга ильи
@@ -152,7 +153,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                         placeholder="Type the word here..."
                         // className="form-control my-3"
                         // TODO? анимация (обратная связь)
-                        className={`form-control my-3 ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}
+                        className={`form-control my-3 input-box ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}
                         value={input}
                         onChange={(e) => {
                             setInput(e.target.value.trim().toUpperCase());
