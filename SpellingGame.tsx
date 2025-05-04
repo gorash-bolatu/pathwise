@@ -100,13 +100,16 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
             setInput('');
         } else {
             // Game is complete, calculate summary
-            const correctWords = results.filter(r => r.correct).map(r => r.word);
-            const failedWords = results.filter(r => !r.correct).map(r => r.word);
+
+            const totalAttempts = results.length;
+            const incorrectAttempts = results.filter(r => !r.correct).length;
+            const distinct = [...new Set(data.map(obj => obj.word))];
+            const distinctIncorrect = [...new Set(data.filter(obj => obj.correct === false).map(obj => obj.word))];
 
             const gameResult: GameResult = {
-                successRate: (correctWords.length / initialWords.length) * 100,
-                completedWords: correctWords,
-                failedWords: failedWords,
+                successRate: 100 - (incorrectAttempts / totalAttempts) * 100,
+                completedWords: distinct,
+                failedWords: distinctIncorrect,
                 rawLog: results
             };
 
@@ -116,7 +119,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
     };
 
     return (
-        <BaseGame title="Spelling Game">
+        <BaseGame title="Spelling game" description="Guess the word and type it in the field below">
             {!completed ? (
                 <>
                     <p className="lead">Definiton:</p>
@@ -151,7 +154,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
                 <div className="alert alert-success mt-4">
                     <h5>🎉 Game Completed!</h5>
                     <p>Success Rate: {(
-                        results.filter(r => r.correct).length / initialWords.length * 100
+                        100 - (results.filter(r => !r.correct).length / results.length) * 100,
                     ).toFixed(0)}%</p>
                 </div>
             )}
