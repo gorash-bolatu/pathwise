@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BaseGame from '../BaseGame';
-import { GameProps, GameResult } from '../../../interfaces/GameInterfaces';
+import { GameProps, GameResult, GameConfig } from '../../../interfaces/GameInterfaces';
 import './SpellingGame.css'; // todo?
 
 /**
@@ -10,13 +10,14 @@ import './SpellingGame.css'; // todo?
  * Props:
  * @param {Object} props - Component props
  * @param {Object} props.data - The game data containing a list of words (`word_list`) and their hints. Format of `word_list`'s value: `{ word: string, hint: string }[]`.
- * @param {Object} [props.settings] - Optional settings object. Expected to include a `difficulty` key with values such as `no-hints` (disables revealing words), `easy`, `normal` (default), or `hard`.
+ * @param {GameConfig} [props.settings] - Optional `GameConfig` object that includes `difficulty` key with values such as `no-hints` (disables revealing words), `easy`, `normal` (default), or `hard`.
  * @param {function(GameResult): void} props.onComplete - Callback function triggered when the game finishes, returning a `GameResult` object.
  *
  * State:
  * - Tracks user input, current word index, input count, and game results.
  * - Dynamically adjusts when to reveal the actual word based on difficulty and mistype count.
  * - Reinserts mistyped words into the queue until each word is typed correctly.
+ * - Plays a feedback animation when a word is typed (in)correctly.
  * 
  * @example
  * ```tsx
