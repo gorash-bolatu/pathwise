@@ -5,18 +5,19 @@ import { GameProps, GameResult } from '../../../interfaces/GameInterfaces';
 /**
  * jsdoc от друга ильи
  * 
- * Props:
  * @component
+ * Props:
  * @param {Object} props - Component props
  * @param {Object} props.data - The game data containing a list of words and their hints. Format: `{ word: string, hint: string }[]`.
- * @param {Object[]} [props.settings] - Optional settings object. Expected to include a `difficulty` key with values such as "easy", "medium", or "hard".
+ * @param {Object[]} [props.settings] - Optional settings object. Expected to include a `difficulty` key with values such as "easy", "normal", or "hard". Defaults to "normal".
  * @param {function(GameResult): void} props.onComplete - Callback function triggered when the game finishes, returning a `GameResult` object.
-*
-* State:
-* - Tracks user input, current word index, input count, and game results.
+ *
+ * State:
+ * - Tracks user input, current word index, input count, and game results.
  * - Dynamically adjusts when to reveal the actual word based on difficulty and mistype count.
-*
-* Usage:
+ * - Reinserts mistyped words into the queue until each word is typed correctly.
+ * 
+ * @example
  * ```tsx
  * <SpellingGame
  *   data={{ word_list: [{ word: 'apple', hint: 'A fruit' }] }}
