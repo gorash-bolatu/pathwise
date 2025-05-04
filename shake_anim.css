@@ -1,12 +1,12 @@
-.input-box, .word-box {
+.input-box, .word-bank {
   transition: box-shadow 0.3s ease;
 }
 
-.input-box.correct, .word-box.correct {
+.input-box.correct, .word-bank.correct {
   box-shadow: 0 0 10px 2px #4CAF50;
 }
 
-.input-box.wrong, .word-box.wrong {
+.input-box.wrong, .word-bank.wrong {
   box-shadow: 0 0 10px 2px #F44336;
   animation: shake 0.3s ease;
 }
