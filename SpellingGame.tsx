@@ -8,8 +8,8 @@ import { GameProps, GameResult } from '../../../interfaces/GameInterfaces';
  * @component
  * Props:
  * @param {Object} props - Component props
- * @param {Object} props.data - The game data containing a list of words and their hints. Format: `{ word: string, hint: string }[]`.
- * @param {Object[]} [props.settings] - Optional settings object. Expected to include a `difficulty` key with values such as "easy", "normal", or "hard". Defaults to "normal".
+ * @param {Object} props.data - The game data containing a list of words (`word_list`) and their hints. Format of `word_list`'s value: `{ word: string, hint: string }[]`.
+ * @param {Object} [props.settings] - Optional settings object. Expected to include a `difficulty` key with values such as `no-hints` (disables revealing words), `easy`, `normal` (default), or `hard`.
  * @param {function(GameResult): void} props.onComplete - Callback function triggered when the game finishes, returning a `GameResult` object.
  *
  * State:
@@ -21,16 +21,18 @@ import { GameProps, GameResult } from '../../../interfaces/GameInterfaces';
  * ```tsx
  * <SpellingGame
  *   data={{ word_list: [{ word: 'apple', hint: 'A fruit' }] }}
- *   settings={ difficulty: 'hard' }
+ *   settings={{ difficulty: 'hard' }}
  *   onComplete={(result) => spellingGameHandler(result)}
  * />
  * ```
 */
-const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameProps) => {
+const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     console.log("SpellingGame data:", data);
+    console.log("SpellingGame settings:", settings);
 
     // Extract the list of words from the game data (fallback to empty array)
-    const initialWords = data?.word_list || [];
+    const initialWords: { word: string; hint: string }[] = data?.word_list || [];
+    if (!initialWords) return;
     const [queue, setQueue] = useState(initialWords);
     const attemptCounts = useRef<Record<string, number>>({}); // мапа: сколько раз пытались напечатать каждое слово
 
@@ -87,8 +89,11 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
         // Check if input is correct
         const isCorrect = input.toUpperCase() === currentWord.toUpperCase();
 
-        // Update results with current word and correctness
-        setResults(results.concat({ word: currentWord, correct: isCorrect }));
+        // New results with current word and correctness
+        const newResults: { word: string; correct: boolean }[] = results.concat({ word: currentWord, correct: isCorrect });
+
+        // Update results
+        setResults(newResults);
 
         attemptCounts.current[currentWord] = (attemptCounts.current[currentWord] || 0) + 1;
 
@@ -103,17 +108,17 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
         } else {
             // Game is complete, calculate summary
 
-            const totalAttempts = results.length;
-            const incorrectAttempts = results.filter(r => !r.correct).length;
-            const distinct = [...new Set(results.map(obj => obj.word))];
-            const distinctIncorrect = [...new Set(results.filter(r => !r.correct).map(obj => obj.word))];
+            const distinct = [...new Set(newResults.map(obj => obj.word))] as string[];
+            const distinctIncorrect = [...new Set(newResults.filter(r => !r.correct).map(obj => obj.word))] as string[];
+            const percentage = newResults.length === 0 ? 0 : 100 - (newResults.filter(r => !r.correct).length / newResults.length) * 100;
 
             const gameResult: GameResult = {
-                successRate: 100 - (incorrectAttempts / totalAttempts) * 100,
+                successRate: percentage,
                 completedWords: distinct,
                 failedWords: distinctIncorrect,
-                rawLog: results
+                rawLog: newResults
             };
+            console.log("SpellingGame GameResult:", gameResult);
 
             setCompleted(true);
             onComplete(gameResult); // Notify parent of completion
@@ -121,10 +126,10 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
     };
 
     return (
-        <BaseGame title="Spelling game" description="Guess the word and type it in the field below">
+        <BaseGame title="Spelling game" description="Guess the word and type it below">
             {!completed ? (
                 <>
-                    <p className="lead">Definiton:</p>
+                    <p className="lead">Word definition:</p>
                     {currentHint && (
                         <h5 className="mb-3">{currentHint}</h5>
                     )}
