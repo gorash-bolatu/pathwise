@@ -84,7 +84,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     // Handle word submission
     const handleSubmit = () => {
         if (!currentWord) return;
-        if (!input.trim()) return;
+        if (!input) return;
 
         // Check if input is correct
         const isCorrect = input.toUpperCase() === currentWord.toUpperCase();
@@ -144,10 +144,11 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                         ref={inputRef}
                         type="text"
                         placeholder="Type the word here..."
-                        className="form-control my-3"
+                        // className="form-control my-3"
+                        className={`form-control my-3 ${feedback === 'correct' ? 'border-success' : feedback === 'wrong' ? 'border-danger' : ''}`}
                         value={input}
                         onChange={(e) => {
-                            setInput(e.target.value.toUpperCase());
+                            setInput(e.target.value.trim().toUpperCase());
                             setInputCount(prev => prev + 1);
                         }}
                         onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
