@@ -29,15 +29,14 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
     console.log("SpellingGame data:", data);
 
     // Extract the list of words from the game data (fallback to empty array)
-    const words = data?.word_list || [];
+    const initialWords = data?.word_list || [];
+    const [queue, setQueue] = useState(initialWords);
+    const attemptCounts = useRef<Record<string, number>>({}); // мапа: сколько раз пытались напечатать каждое слово
 
-    // илья:
+    // от ильи:
     // сделай реализацию где игра принимает настройки
     // настройка, отвечающая за эту самую сложность, которую ты получил бы из массива параметров settings
     const difficulty = settings?.difficulty as string ?? 'normal';
-
-    // Track current word index
-    const [index, setIndex] = useState(0);
 
     // Store the user's current input
     const [input, setInput] = useState('');
@@ -54,9 +53,10 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
 
     const baseThreshold = thresholds[difficulty] as number ?? 15; // колво нажатий на клаве для показа слова
 
-    const mistypeCount = results.filter(
-        r => r.word === currentWord && !r.correct
-    ).length; // сколько раз слово уже было напечатано в этой сессии (т.е. напечатано неверно)
+    // Get the current word in uppercase
+    const currentWord: string = queue[0]?.word?.toUpperCase() ?? '';
+
+    const mistypeCount = attemptCounts.current[currentWord] || 0; // сколько раз слово уже было напечатано в этой сессии (т.е. напечатано неверно)
 
     const inputsThreshold = baseThreshold - (mistypeCount * 2); // колво нажатий для показа слова с учетом ошибок (больше ошибок => быстрее показывается)
 
@@ -68,18 +68,15 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
     // Reference to the input field for auto focus
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Get the current word in uppercase
-    const currentWord: string = words[index]?.word?.toUpperCase() ?? '';
-
-    // илья:
-        // там я еще hint добавить думал
-    const currentHint = words[index]?.hint;
+    // от ильи:
+    // там я еще hint добавить думал
+    const currentHint = queue[0]?.hint;
 
     // Auto-focus the input on each new word
     useEffect(() => {
         inputRef.current?.focus();
         setInputCount(0); // сбрасывать счётчик нажатий на каждом новом слове
-    }, [index]);
+    }, [queue]);
 
     // Handle word submission
     const handleSubmit = () => {
@@ -89,23 +86,28 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
         const isCorrect = input === currentWord;
 
         // Update results with current word and correctness
-        const newResults = [...results, { word: currentWord, correct: isCorrect }];
-        setResults(newResults);
+        setResults(results.concat({ word: currentWord, correct: isCorrect }));
+
+        attemptCounts.current[currentWord]++; // TODO а это разве не immutable???
+
+        const nextQueue = queue.slice(1); // убрать 1й элемент в очереди
+        if (!isCorrect)
+            nextQueue.push(currentWord); // запихнуть в конец очереди если неправильно написано
 
         // Move to next word if available
-        if (index + 1 < words.length) {
-            setIndex(index + 1);
+        if (nextQueue.length >= 0) {
+            setQueue(nextQueue);
             setInput('');
         } else {
             // Game is complete, calculate summary
-            const correctWords = newResults.filter(r => r.correct).map(r => r.word);
-            const failedWords = newResults.filter(r => !r.correct).map(r => r.word);
+            const correctWords = results.filter(r => r.correct).map(r => r.word);
+            const failedWords = results.filter(r => !r.correct).map(r => r.word);
 
             const gameResult: GameResult = {
-                successRate: (correctWords.length / words.length) * 100,
+                successRate: (correctWords.length / initialWords.length) * 100,
                 completedWords: correctWords,
                 failedWords: failedWords,
-                rawLog: newResults
+                rawLog: results
             };
 
             setCompleted(true);
@@ -118,7 +120,9 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
             {!completed ? (
                 <>
                     <p className="lead">Definiton:</p>
-                    <h5 className="mb-3">{currentHint}</h5>
+                    {currentHint && (
+                        <h5 className="mb-3">{currentHint}</h5>
+                    )}
 
                     {/* Показать слово после inputsThreshold нажатий (фора - длина слова) */}
                     {inputCount >= (inputsThreshold + currentWord.length) && (
@@ -147,7 +151,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
                 <div className="alert alert-success mt-4">
                     <h5>🎉 Game Completed!</h5>
                     <p>Success Rate: {(
-                        results.filter(r => r.correct).length / words.length * 100
+                        results.filter(r => r.correct).length / initialWords.length * 100
                     ).toFixed(0)}%</p>
                 </div>
             )}
