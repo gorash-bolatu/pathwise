@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BaseGame from '../BaseGame';
 import { GameProps, GameResult } from '../../../interfaces/GameInterfaces';
-
+import './shake_anim.css'
 
 const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     console.log("SpellingGame data:", data);
@@ -11,7 +11,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     const initialWords: { word: string; hint: string }[] = Array.isArray(data?.word_list) ? data.word_list : [];
 
     if (initialWords.length === 0) {
-        return <div>No words provided for the game.</div>;
+        return <div className="alert alert-danger">No words provided for the game!</div>;
     }
     const [queue, setQueue] = useState(initialWords);
     const attemptCounts = useRef<Record<string, number>>({}); // мапа: сколько раз пытались напечатать каждое слово
@@ -114,7 +114,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     return (
         <BaseGame title="Spelling game" description="Guess the word and type it below">
             {!completed ? (
-                // TODO? анимация (обратная связь)
+                // анимация (обратная связь)
                 <div className={`gamearea ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}>
                     <p className="lead">Word definition:</p>
                     {currentHint && (
@@ -132,7 +132,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                         type="text"
                         placeholder="Type the word here..."
                         // className="form-control my-3"
-                        // TODO? анимация (обратная связь)
+                        // анимация (обратная связь)
                         className={`form-control my-3 input-box ${feedback}`}
                         value={input}
                         onChange={(e) => {
@@ -160,6 +160,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
 };
 
 export default SpellingGame;
+// 
 // const SpellingGame: React.FC<GameProps> = ({ data, onComplete }) => {
 //     console.log("SpellingGame data:", data);
 //
