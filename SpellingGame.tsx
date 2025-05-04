@@ -12,15 +12,6 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     // настройка, отвечающая за эту самую сложность, которую ты получил бы из массива параметров settings
     const difficulty = settings?.difficulty as string ?? 'normal';
 
-    const thresholds = {
-        'easy': 5,
-        'normal': 10,
-        'hard': 20,
-        'no-hints': Number.MAX_VALUE
-    }
-    
-    const inputsThreshold = thresholds[difficulty] as number ?? 15;
-
     // Track current word index
     const [index, setIndex] = useState(0);
 
@@ -29,6 +20,21 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
 
     // Store result history per word: correct or wrong
     const [results, setResults] = useState<{ word: string; correct: boolean }[]>([]);
+
+    const thresholds = {
+        'easy': 5,
+        'normal': 10,
+        'hard': 20,
+        'no-hints': Number.MAX_VALUE
+    }
+
+    const baseThreshold = thresholds[difficulty] as number ?? 15; // колво нажатий на клаве для показа слова
+
+    const mistypeCount = results.filter(
+        r => r.word === currentWord && !r.correct
+    ).length; // сколько раз слово уже было напечатано в этой сессии (т.е. напечатано неверно)
+
+    const inputsThreshold = baseThreshold - (mistypeCount * 2); // колво нажатий для показа слова с учетом ошибок (больше ошибок => быстрее показывается)
 
     // Track whether the game is completed
     const [completed, setCompleted] = useState(false);
