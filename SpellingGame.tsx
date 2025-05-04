@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BaseGame from '../BaseGame';
 import { GameProps, GameResult } from '../../../interfaces/GameInterfaces';
-import './shake_anim.css'
+import './shake_anim.css';
 
 const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     console.log("SpellingGame data:", data);
