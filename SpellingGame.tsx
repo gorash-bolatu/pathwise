@@ -54,7 +54,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
     const baseThreshold = thresholds[difficulty] as number ?? 15; // колво нажатий на клаве для показа слова
 
     // Get the current word in uppercase
-    const currentWord: string = queue[0]?.word?.toUpperCase() ?? '';
+    const currentWord: string = queue[0]?.word ?? '';
 
     const mistypeCount = attemptCounts.current[currentWord] || 0; // сколько раз слово уже было напечатано в этой сессии (т.е. напечатано неверно)
 
@@ -81,21 +81,22 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
     // Handle word submission
     const handleSubmit = () => {
         if (!currentWord) return;
+        if (!input.trim()) return;
 
         // Check if input is correct
-        const isCorrect = input === currentWord;
+        const isCorrect = input.toUpperCase() === currentWord.toUpperCase();
 
         // Update results with current word and correctness
         setResults(results.concat({ word: currentWord, correct: isCorrect }));
 
-        attemptCounts.current[currentWord]++; // TODO а это разве не immutable???
+        attemptCounts.current[currentWord] = (attemptCounts.current[currentWord] || 0) + 1;
 
         const nextQueue = queue.slice(1); // убрать 1й элемент в очереди
         if (!isCorrect)
-            nextQueue.push(currentWord); // запихнуть в конец очереди если неправильно написано
+            nextQueue.push(queue[0]); // запихнуть в конец очереди если неправильно написано
 
         // Move to next word if available
-        if (nextQueue.length >= 0) {
+        if (nextQueue.length > 0) {
             setQueue(nextQueue);
             setInput('');
         } else {
@@ -103,8 +104,8 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
 
             const totalAttempts = results.length;
             const incorrectAttempts = results.filter(r => !r.correct).length;
-            const distinct = [...new Set(data.map(obj => obj.word))];
-            const distinctIncorrect = [...new Set(data.filter(obj => obj.correct === false).map(obj => obj.word))];
+            const distinct = [...new Set(results.map(obj => obj.word))];
+            const distinctIncorrect = [...new Set(results.filter(r => !r.correct).map(obj => obj.word))];
 
             const gameResult: GameResult = {
                 successRate: 100 - (incorrectAttempts / totalAttempts) * 100,
@@ -129,7 +130,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
 
                     {/* Показать слово после inputsThreshold нажатий (фора - длина слова) */}
                     {inputCount >= (inputsThreshold + currentWord.length) && (
-                        <div className="alert alert-info">The word is: <strong>{currentWord}</strong></div>
+                        <div className="alert alert-info">The word is: <strong>{currentWord.toUpperCase()}</strong></div>
                     )}
 
                     {/* Input field for spelling */}
@@ -154,7 +155,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }: GameP
                 <div className="alert alert-success mt-4">
                     <h5>🎉 Game Completed!</h5>
                     <p>Success Rate: {(
-                        100 - (results.filter(r => !r.correct).length / results.length) * 100
+                        results.length === 0 ? 0 : 100 - (results.filter(r => !r.correct).length / results.length) * 100
                     ).toFixed(0)}%</p>
                 </div>
             )}
