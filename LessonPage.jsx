@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import SpellingGame from '../components/games/spelling/SpellingGame.tsx';
+import BlankFillGame from '../components/games/BlankFillGame.tsx';
+import SentenceBuildingGame from '../components/games/SentenceBuildingGame.tsx'
 
 const LessonPage = () => {
     const { lessonId } = useParams();
-    const [lesson, setLesson] = useState(null);
+    const [lesson, setLesson] = useState < lessonType > (null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [gameFinished, setGameFinished] = useState(false);
@@ -40,7 +42,12 @@ const LessonPage = () => {
 
     const handleGameComplete = (result) => {
         console.log('Game finished with result:', result);
-        setGameFinished(true);  // You decide what to do here
+        setGameFinished(true); // TODO?
+    };
+
+    const commonProps = {
+        data: lesson.game_content,
+        onComplete: handleGameComplete,
     };
 
     return (
@@ -50,14 +57,16 @@ const LessonPage = () => {
                 <h2>{lesson.title}</h2>
                 <p><strong>Type:</strong> {lesson.type}</p>
                 <p><strong>Duration:</strong> {lesson.duration}</p>
-                {lesson.type === 'game' && (
+
+                {lesson.type === 'game' && lesson.game_content && (
                     <>
-                        {lesson.game_type === 'spelling' && lesson.game_content?.word_list && (
-                            <SpellingGame
-                                data={lesson.game_content}
-                                onComplete={(results) => handleGameComplete(true)}
-                            />
-                        )}
+                        {
+                            {
+                                spelling: <SpellingGame {...commonProps} />,
+                                BlankFill: <BlankFillGame {...commonProps} />,
+                                sentences: <SentenceBuildingGame {...commonProps} />,
+                            }[lesson.game_type] ?? null
+                        }
 
                         {gameFinished && (
                             <>

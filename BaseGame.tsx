@@ -23,7 +23,7 @@ type BaseGameProps = {
  *   title="Vocabulary Quiz" 
  *   description="Match words to their definitions"
  * >
- *   <MatchingGame />
+ *   <BlankFillGame />
  * </BaseGame>
  * ```
  * @returns {JSX.Element} A styled game container with title, description, and content area
