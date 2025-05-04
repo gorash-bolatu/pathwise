@@ -136,7 +136,8 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     return (
         <BaseGame title="Spelling game" description="Guess the word and type it below">
             {!completed ? (
-                <>
+                // TODO? анимация (обратная связь)
+                <div className={`gamearea ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}>
                     <p className="lead">Word definition:</p>
                     {currentHint && (
                         <h5 className="mb-3">{currentHint}</h5>
@@ -154,7 +155,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                         placeholder="Type the word here..."
                         // className="form-control my-3"
                         // TODO? анимация (обратная связь)
-                        className={`form-control my-3 input-box ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}
+                        className={`form-control my-3 input-box ${feedback}`}
                         value={input}
                         onChange={(e) => {
                             setInput(e.target.value.trim().toUpperCase());
@@ -166,7 +167,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
 
                     {/* Button to submit the word */}
                     <button className="btn btn-primary" onClick={handleSubmit}>Check</button>
-                </>
+                </div>
             ) : (
                 // Summary after game ends
                 <div className="alert alert-success mt-4">
