@@ -9,6 +9,18 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     // Extract the list of words from the game data (fallback to empty array)
     const words = data?.word_list || [];
 
+    // настройка, отвечающая за эту самую сложность, которую ты получил бы из массива параметров settings
+    const difficulty = settings?.difficulty as string ?? 'normal';
+
+    const thresholds = {
+        'easy': 5,
+        'normal': 10,
+        'hard': 20,
+        'no-hints': Number.MAX_VALUE
+    }
+    
+    const inputsThreshold = thresholds[difficulty] as number ?? 15;
+
     // Track current word index
     const [index, setIndex] = useState(0);
 
@@ -20,8 +32,8 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
 
     // Track whether the game is completed
     const [completed, setCompleted] = useState(false);
-    
-    const [inputCount, setInputCount] = useState(0); // Tracks input change count 
+
+    const [inputCount, setInputCount] = useState(0); // количество нажатий на клаве
 
     // Reference to the input field for auto focus
     const inputRef = useRef<HTMLInputElement>(null);
@@ -35,7 +47,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     // Auto-focus the input on each new word
     useEffect(() => {
         inputRef.current?.focus();
-        setInputCount(0); // Reset input count on new word
+        setInputCount(0); // сбрасывать счётчик нажатий на каждом новом слове
     }, [index]);
 
     // Handle word submission
@@ -77,8 +89,8 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                     <p className="lead">Definiton:</p>
                     <h5 className="mb-3">{currentHint}</h5>
 
-                    {/* Reveal the word after 15 input changes */}
-                    {inputCount >= 15 && (
+                    {/* Показать слово после inputsThreshold нажатий (фора - длина слова) */}
+                    {inputCount >= (inputsThreshold + currentWord.length) && (
                         <div className="alert alert-info">The word is: <strong>{currentWord}</strong></div>
                     )}
 
