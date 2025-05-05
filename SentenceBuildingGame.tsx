@@ -21,6 +21,7 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
         typedData.sentence_list.every(sentence =>
             Array.isArray(sentence.sentence) &&
             Array.isArray(sentence.wordList) &&
+            sentence.sentence.length === sentence.wordList.length &&
             sentence.sentence.every(word =>
                 sentence.wordList.map(w => w.toLowerCase()).includes(word.toLowerCase())
             )
@@ -156,13 +157,13 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
 
 
     return (
-        <BaseGame title="Sentence Building" description="Build the correct sentence by selecting words in the right order">
+        <BaseGame title="Sentence Building" description="Choose the words in the right order to make a sentence">
             {!completed ? (
                 <div className={`gamearea ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}>
                     <div className="sentence-container">
                         {selectedWords.map((chosenWord: string, idx: number) => (
                             <span
-                                key={idx}
+                            key={`${chosenWord || "empty"}-${idx}`}
                                 className={`word-slot ${chosenWord ? 'filled' : 'empty'}`}
                                 onClick={() => handleWordDeselect(idx)}
                             >
