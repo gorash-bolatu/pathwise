@@ -32,7 +32,7 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
 
     // Initialize state
     const [queue, setQueue] = useState(typedData.sentence_list || []);
-    const [selectedWords, setSelectedWords] = useState<string[]>([]);
+    const [selectedWords, setSelectedWords] = useState<(string | null)[]>([]);
     const [availableWords, setAvailableWords] = useState<string[]>([]);
     const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
     const [completed, setCompleted] = useState(false);
@@ -62,12 +62,14 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
     // Initialize attempt counts only when the game starts
     useEffect(() => {
         if (queue.length > 0 && !isGameStarted.current) {
-            const initialCounts = queue[0].wordList.reduce((acc: Record<string, number>, word: string) => {
-                acc[word] = 0; // Initialize incorrect attempts for each word
-                return acc;
-            }, {} as Record<string, number>);
+            const initialCounts = queue[0].wordList.reduce((acc, word) => ({ ...acc, [word]: 0 }), {});
             attemptCounts.current = initialCounts;
             isGameStarted.current = true;
+
+            // Initialize availableWords and selectedWords
+            const shuffled = shuffleWords(queue[0].wordList);
+            setAvailableWords(shuffled);
+            setSelectedWords(Array(queue[0].sentence.length).fill(null));
         }
     }, [queue]);
 
@@ -106,40 +108,7 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
         });
         setAvailableWords(prev => [...prev, word]);
     };
-
-    // Check if the built sentence matches the correct sentence
-    const handleCheck = () => {
-        if (!currentSentence || selectedWords.some((w) => !w)) return; // Ensure all blanks are filled
-
-        // Validate the built sentence (case-insensitive comparison)
-        const builtSentence = selectedWords.join(' ').toLowerCase();
-        const correctSentence = currentSentence.sentence.join(' ').toLowerCase();
-
-        const isCorrect = builtSentence === correctSentence;
-        setFeedback(isCorrect ? 'correct' : 'wrong');
-        setResults(prev => [...prev, { sentence: currentSentence.sentence.join(' '), correct: isCorrect }]);
-        const sentenceKey = currentSentence.sentence.join('|');
-        if (!isCorrect) {
-            attemptCounts.current[sentenceKey] = (attemptCounts.current[sentenceKey] || 0) + 1;
-            selectedWords.forEach((word) => {
-                if (word) {
-                    attemptCounts.current[word] = (attemptCounts.current[word] || 0) + 1;
-                }
-            });
-        }
-
-        setTimeout(() => {
-            if (isCorrect) {
-                const newQueue = queue.slice(1);
-                if (newQueue.length === 0) completeGame();
-                else setQueue(newQueue);
-            } else {
-                setQueue([...queue.slice(1), queue[0]]);
-            }
-            setFeedback(null);
-        }, 1000);
-    };
-
+    
     // Complete the game and calculate the final result
     const completeGame = () => {
         const gameResult: GameResult = {
@@ -153,13 +122,37 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
         setCompleted(true);
     };
 
-    useEffect(() => {
-        if (queue.length > 0) {
-            const { wordList, sentence } = queue[0];
-            setAvailableWords(shuffleWords(wordList.map(w => w.toLowerCase())));
-            setSelectedWords(Array(sentence.length).fill(null));
+    // Check if the built sentence matches the correct sentence
+    const handleCheck = () => {
+        if (!currentSentence || selectedWords.some((w) => !w)) return;
+      
+        // Validate the built sentence (case-insensitive comparison):
+        const builtSentence = selectedWords.join(' ').toLowerCase();
+        const correctSentence = currentSentence.sentence.join(' ').toLowerCase();
+        const isCorrect = builtSentence === correctSentence;
+        
+        setFeedback(isCorrect ? 'correct' : 'wrong');
+        setResults((prev) => [...prev, { sentence: currentSentence.sentence.join(' '), correct: isCorrect }]);
+      
+        const sentenceKey = currentSentence.sentence.join('|');
+        if (!isCorrect) {
+          attemptCounts.current[sentenceKey] = (attemptCounts.current[sentenceKey] || 0) + 1;
         }
-    }, [queue]);
+      
+        setTimeout(() => {
+          if (isCorrect) {
+            const newQueue = queue.slice(1);
+            if (newQueue.length === 0) {
+              completeGame(); // Critical fix: Call completion here
+            } else {
+              setQueue(newQueue);
+            }
+          } else {
+            setQueue([...queue.slice(1), queue[0]]);
+          }
+          setFeedback(null);
+        }, 1000);
+      };
 
 
     return (
@@ -170,8 +163,7 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
                         {selectedWords.map((chosenWord: string, idx: number) => (
                             <span
                                 key={idx}
-                                className={`word-slot ${chosenWord ? 'filled' : 'empty'} ${showHints(attemptCounts.current[chosenWord]) ? 'hint' : ''
-                                    }`}
+                                className={`word-slot ${chosenWord ? 'filled' : 'empty'}`}
                                 onClick={() => handleWordDeselect(idx)}
                             >
                                 {chosenWord || ''}
@@ -181,15 +173,19 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
 
                     <div className="word-bank mb-3">
                         {availableWords.map((word, i) => {
-                            const wordPosition = currentSentence?.sentence.findIndex(
-                                correctWord => correctWord.toLowerCase() === word.toLowerCase()
-                            ) ?? -1;
+                            // Track all positions of the current word in the correct sentence
+                            const correctPositions = currentSentence.sentence
+                                .map((correctWord, idx) =>
+                                    correctWord.toLowerCase() === word.toLowerCase() ? idx : -1
+                                )
+                                .filter(idx => idx !== -1);
 
-                            const shouldGlow = wordPosition !== -1 && wordPosition < hintsToShow;
+                            // Determine if any of the positions are within the hint threshold
+                            const shouldGlow = correctPositions.some(pos => pos < hintsToShow);
 
                             return (
                                 <button
-                                    key={i}
+                                    key={`${word}-${i}`}
                                     className={`btn btn-outline-primary m-1 ${shouldGlow ? 'hint-glow' : ''}`}
                                     onClick={() => handleWordSelect(word)}
                                 >

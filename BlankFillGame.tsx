@@ -11,12 +11,17 @@ interface SentencePart {
 }
 
 const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
+    console.log("SpellingGame data:", data);
+    console.log("SpellingGame settings:", settings);
+
     // Validate if data conforms to the expected structure (sentence_list array)
-    const isValidData = Array.isArray(data?.sentence_list) && data.sentence_list.every(sentence =>
-        Array.isArray(sentence.parts) &&
-        Array.isArray(sentence.wordList) &&
-        Array.isArray(sentence.correctWords)
-    );
+    const isValidData = Array.isArray(data?.sentence_list) && data.sentence_list.every(sentence => {
+        const blankCount = sentence.parts.filter(p => p.type === 'blank').length;
+        return (
+            Array.isArray(sentence.correctWords) &&
+            sentence.correctWords.length === blankCount // Match blanks to answers
+        );
+    });
 
     if (!isValidData || data?.sentence_list?.length === 0) {
         return <div>No sentences provided for the game!</div>;
@@ -66,6 +71,24 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
         }
     }, [queue]); // Runs only once when the game starts
 
+    useEffect(() => {
+        if (queue.length > 0) {
+            const shuffled = shuffleWords(queue[0].wordList);
+            setAvailableWords(shuffled);
+            setSelectedWords(Array(queue[0].correctWords.length).fill(null));
+        }
+    }, [queue]);
+
+    // Shuffle the word list to randomize the order
+    const shuffleWords = (wordList: string[]) => {
+        const shuffled = [...wordList];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    };
+
     // Word selection and deselection handlers
     const handleWordSelect = (word: string) => {
         const firstEmptyIdx = selectedWords.findIndex((sw) => sw === null);
@@ -109,9 +132,10 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
         setResults((prev) => [...prev, ...validation]);
 
         // Update incorrect attempt counts for incorrect answers
-        validation.forEach((v) => {
-            if (!v.correct && v.word) {
-                attemptCounts.current[v.word] = (attemptCounts.current[v.word] || 0) + 1;
+        validation.forEach((v, index) => {
+            if (!v.correct) {
+                const correctWord = currentSentence.correctWords[index];
+                attemptCounts.current[correctWord] = (attemptCounts.current[correctWord] || 0) + 1;
             }
         });
 
@@ -156,12 +180,12 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                                 <span
                                     key={i}
                                     className={`blank ${selectedWords[i] ? 'filled' : 'empty'} 
-                                    ${showHints(attemptCounts.current[currentSentence?.wordList[i]]) ? 'hint' : ''}`}
+                                    ${showHints(attemptCounts.current[currentSentence.correctWords[i]]) ? 'hint' : ''}`}
                                     style={{ width: selectedWords[i] ? `${selectedWords[i].length}ch` : 'auto' }}
                                     onClick={() => handleWordDeselect(i)}
                                 >
-                                    {showHints(attemptCounts.current[currentSentence?.wordList[i]])
-                                        ? currentSentence.wordList[i]
+                                    {showHints(attemptCounts.current[currentSentence.correctWords[i]])
+                                        ? currentSentence.correctWords[i]
                                         : selectedWords[i] || ''}
                                 </span>
                             )
