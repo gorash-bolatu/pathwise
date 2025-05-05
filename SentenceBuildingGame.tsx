@@ -13,6 +13,9 @@ interface SentenceBuildingData {
 }
 
 const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
+    console.log("SpellingGame data:", data);
+    console.log("SpellingGame settings:", settings);
+
     // Ensure the data conforms to the expected structure of SentenceBuildingData
     const typedData = data as SentenceBuildingData; // Type assertion for data
 
@@ -109,7 +112,7 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
         });
         setAvailableWords(prev => [...prev, word]);
     };
-    
+
     // Complete the game and calculate the final result
     const completeGame = () => {
         const gameResult: GameResult = {
@@ -126,34 +129,34 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
     // Check if the built sentence matches the correct sentence
     const handleCheck = () => {
         if (!currentSentence || selectedWords.some((w) => !w)) return;
-      
+
         // Validate the built sentence (case-insensitive comparison):
         const builtSentence = selectedWords.join(' ').toLowerCase();
         const correctSentence = currentSentence.sentence.join(' ').toLowerCase();
         const isCorrect = builtSentence === correctSentence;
-        
+
         setFeedback(isCorrect ? 'correct' : 'wrong');
         setResults((prev) => [...prev, { sentence: currentSentence.sentence.join(' '), correct: isCorrect }]);
-      
+
         const sentenceKey = currentSentence.sentence.join('|');
         if (!isCorrect) {
-          attemptCounts.current[sentenceKey] = (attemptCounts.current[sentenceKey] || 0) + 1;
+            attemptCounts.current[sentenceKey] = (attemptCounts.current[sentenceKey] || 0) + 1;
         }
-      
+
         setTimeout(() => {
-          if (isCorrect) {
-            const newQueue = queue.slice(1);
-            if (newQueue.length === 0) {
-              completeGame(); // Critical fix: Call completion here
+            if (isCorrect) {
+                const newQueue = queue.slice(1);
+                if (newQueue.length === 0) {
+                    completeGame(); // Critical fix: Call completion here
+                } else {
+                    setQueue(newQueue);
+                }
             } else {
-              setQueue(newQueue);
+                setQueue([...queue.slice(1), queue[0]]);
             }
-          } else {
-            setQueue([...queue.slice(1), queue[0]]);
-          }
-          setFeedback(null);
+            setFeedback(null);
         }, 1000);
-      };
+    };
 
 
     return (
@@ -163,7 +166,7 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
                     <div className="sentence-container">
                         {selectedWords.map((chosenWord: string, idx: number) => (
                             <span
-                            key={`${chosenWord || "empty"}-${idx}`}
+                                key={`${chosenWord || "empty"}-${idx}`}
                                 className={`word-slot ${chosenWord ? 'filled' : 'empty'}`}
                                 onClick={() => handleWordDeselect(idx)}
                             >
