@@ -1,0 +1,55 @@
+/* Sentence container - using flexbox */
+.sentence-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Word slots styling */
+.word-slot {
+  display: inline-flex;
+  min-width: 4ch; /* Minimum width for empty slots */
+  padding: 8px 12px;
+  background-color: #f1f1f1;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  justify-content: center;
+  align-items: center;
+  height: 2.5em;
+}
+
+.word-slot.empty {
+  border-bottom: 2px dashed #888;
+  background-color: transparent;
+}
+
+.word-slot.filled {
+  background-color: #e3f2fd;
+  border-bottom: 2px solid #2196f3;
+  color: #0d47a1;
+  font-weight: bold;
+}
+
+.word-slot.hint {
+  color: #888;
+  font-style: italic;
+}
+
+/* Word bank styling (similar to BlankFillGame) */
+.word-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.word-bank button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
