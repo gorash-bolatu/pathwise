@@ -17,9 +17,14 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
     const typedData = data as SentenceBuildingData; // Type assertion for data
 
     // Validate the structure of the data
-    const isValidData = Array.isArray(typedData?.sentence_list) && typedData.sentence_list.every(sentence =>
-        Array.isArray(sentence.sentence) && Array.isArray(sentence.wordList)
-    );
+    const isValidData = Array.isArray(typedData?.sentence_list) &&
+        typedData.sentence_list.every(sentence =>
+            Array.isArray(sentence.sentence) &&
+            Array.isArray(sentence.wordList) &&
+            sentence.sentence.every(word =>
+                sentence.wordList.map(w => w.toLowerCase()).includes(word.toLowerCase())
+            )
+        );
 
     if (!isValidData || typedData?.sentence_list?.length === 0) {
         return <div>No sentences provided for the game!</div>;
@@ -63,8 +68,8 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
     const shuffleWords = (wordList: string[]) => {
         const shuffled = [...wordList];
         for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
         return shuffled;
     };
@@ -143,9 +148,9 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
 
     useEffect(() => {
         if (queue.length > 0) {
-            const { wordList } = queue[0];
-            setAvailableWords(shuffleWords(wordList));
-            setSelectedWords(Array(wordList.length).fill(null));
+            const { wordList, sentence } = queue[0];
+            setAvailableWords(shuffleWords(wordList.map(w => w.toLowerCase())));
+            setSelectedWords(Array(sentence.length).fill(null));
         }
     }, [queue]);
 
@@ -153,31 +158,38 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
         <BaseGame title="Sentence Building" description="Build the correct sentence by selecting words in the right order">
             {!completed ? (
                 <div className={`gamearea ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}>
-                    <div className="sentence mb-4">
-                        {selectedWords.map((chosenWord: string, idx: number) => {
-                            const widthCh = chosenWord ? chosenWord.length : 4; // default width for empty slots
-                            return (
-                                <span
-                                    key={idx}
-                                    className={`word-slot ${chosenWord ? 'filled' : 'empty'}`}
-                                    style={{ width: `${widthCh}ch` }}
-                                    onClick={() => handleWordDeselect(idx)}
-                                >
-                                    {chosenWord || ''}
-                                </span>
-                            );
-                        })}
+                    {/* Updated sentence container */}
+                    <div className="sentence-container">
+                        {selectedWords.map((chosenWord: string, idx: number) => (
+                            <span
+                                key={idx}
+                                className={`word-slot ${chosenWord ? 'filled' : 'empty'} ${showHints(attemptCounts.current[chosenWord]) ? 'hint' : ''
+                                    }`}
+                                onClick={() => handleWordDeselect(idx)}
+                            >
+                                {chosenWord || ''}
+                            </span>
+                        ))}
                     </div>
 
-                    <div className="word-bank mb-3">
+                    {/* Word bank remains similar but uses the new CSS */}
+                    <div className="word-bank">
                         {availableWords.map((word, i) => (
-                            <button key={i} className="btn btn-outline-primary m-1" onClick={() => handleWordSelect(word)}>
+                            <button
+                                key={i}
+                                className="btn btn-outline-primary"
+                                onClick={() => handleWordSelect(word)}
+                            >
                                 {word}
                             </button>
                         ))}
                     </div>
 
-                    <button className="btn btn-primary" onClick={handleCheck} disabled={selectedWords.some((w) => !w)}>
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleCheck}
+                        disabled={selectedWords.some((w) => !w)}
+                    >
                         Check
                     </button>
                 </div>
