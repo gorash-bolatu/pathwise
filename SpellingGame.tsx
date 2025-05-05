@@ -7,6 +7,9 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     console.log("SpellingGame data:", data);
     console.log("SpellingGame settings:", settings);
 
+    const isValidData = initialWords.every(word => word?.word && word?.hint);
+    if (!isValidData) return <div>Invalid word list!</div>;
+
     // Extract the list of words from the game data (fallback to empty array)
     const initialWords: { word: string; hint: string }[] = Array.isArray(data?.word_list) ? data.word_list : [];
 
@@ -41,7 +44,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
 
     const mistypeCount = attemptCounts.current[currentWord] || 0; // сколько раз слово уже было напечатано в этой сессии (т.е. напечатано неверно)
 
-    const inputsThreshold = baseThreshold - (mistypeCount * 2); // колво нажатий для показа слова с учетом ошибок (больше ошибок => быстрее показывается)
+    const inputsThreshold = Math.max(0, baseThreshold - mistypeCount * 2); // колво нажатий для показа слова с учетом ошибок (больше ошибок => быстрее показывается)
 
     // Track whether the game is completed
     const [completed, setCompleted] = useState(false);
@@ -92,13 +95,12 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
             } else {
                 // Game is complete, calculate summary
 
-                const distinct = [...new Set(newResults.map(obj => obj.word))] as string[];
+                const distinctWords = [...new Set(newResults.map(r => r.word))] as string[];
                 const distinctIncorrect = [...new Set(newResults.filter(r => !r.correct).map(obj => obj.word))] as string[];
-                const percentage = newResults.length === 0 ? 0 : 100 - (newResults.filter(r => !r.correct).length / newResults.length) * 100;
-
+                const percentage = (distinctWords.filter(w => newResults.filter(r => r.word === w && r.correct)).length / distinctWords.length) * 100;
                 const gameResult: GameResult = {
                     successRate: percentage,
-                    completedWords: distinct,
+                    completedWords: distinctWords,
                     failedWords: distinctIncorrect,
                     rawLog: newResults
                 };
@@ -160,7 +162,7 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
 };
 
 export default SpellingGame;
-// 
+//
 // const SpellingGame: React.FC<GameProps> = ({ data, onComplete }) => {
 //     console.log("SpellingGame data:", data);
 //
