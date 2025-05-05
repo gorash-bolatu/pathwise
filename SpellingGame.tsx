@@ -7,11 +7,11 @@ const SpellingGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     console.log("SpellingGame data:", data);
     console.log("SpellingGame settings:", settings);
 
-    const isValidData = initialWords.every(word => word?.word && word?.hint);
-    if (!isValidData) return <div>Invalid word list!</div>;
-
     // Extract the list of words from the game data (fallback to empty array)
     const initialWords: { word: string; hint: string }[] = Array.isArray(data?.word_list) ? data.word_list : [];
+
+    const isValidData = initialWords.every(word => word?.word && word?.hint);
+    if (!isValidData) return <div>Invalid word list!</div>;
 
     if (initialWords.length === 0) {
         return <div className="alert alert-danger">No words provided for the game!</div>;
