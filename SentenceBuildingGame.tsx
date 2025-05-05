@@ -39,18 +39,25 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
     const [results, setResults] = useState<{ sentence: string; correct: boolean }[]>([]);
 
     // Reference for tracking incorrect attempts for each word
-    const attemptCounts = useRef<Record<string, number>>({});
+    const attemptCounts = useRef<Record<string, number>>({}); // Track attempts per sentence
+
     const isGameStarted = useRef(false);
 
     // Difficulty and reveal threshold for hints
     type Difficulty = 'easy' | 'normal' | 'hard' | 'no-hints';
     const difficulty: Difficulty = settings?.difficulty ?? 'normal';
     const hintThresholds = {
-        easy: 1,
-        normal: 2,
-        hard: 3,
+        'easy': 0,
+        'normal': 1,
+        'hard': 2,
         'no-hints': Infinity
     };
+
+    const revealThreshold = hintThresholds[difficulty] ?? 1;
+    const currentSentence = queue[0];
+    const sentenceKey = currentSentence?.sentence.join('|') || '';
+    const attempts = attemptCounts.current[sentenceKey] || 0;
+    const hintsToShow = Math.max(0, attempts - revealThreshold);
 
     // Initialize attempt counts only when the game starts
     useEffect(() => {
@@ -102,8 +109,7 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
 
     // Check if the built sentence matches the correct sentence
     const handleCheck = () => {
-        const currentSentence = queue[0];
-        if (!currentSentence || selectedWords.some((w) => w === null)) return; // Ensure all blanks are filled
+        if (!currentSentence || selectedWords.some((w) => !w)) return; // Ensure all blanks are filled
 
         // Validate the built sentence (case-insensitive comparison)
         const builtSentence = selectedWords.join(' ').toLowerCase();
@@ -112,8 +118,9 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
         const isCorrect = builtSentence === correctSentence;
         setFeedback(isCorrect ? 'correct' : 'wrong');
         setResults(prev => [...prev, { sentence: currentSentence.sentence.join(' '), correct: isCorrect }]);
-
+        const sentenceKey = currentSentence.sentence.join('|');
         if (!isCorrect) {
+            attemptCounts.current[sentenceKey] = (attemptCounts.current[sentenceKey] || 0) + 1;
             selectedWords.forEach((word) => {
                 if (word) {
                     attemptCounts.current[word] = (attemptCounts.current[word] || 0) + 1;
@@ -154,11 +161,11 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
         }
     }, [queue]);
 
+
     return (
         <BaseGame title="Sentence Building" description="Build the correct sentence by selecting words in the right order">
             {!completed ? (
                 <div className={`gamearea ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}>
-                    {/* Updated sentence container */}
                     <div className="sentence-container">
                         {selectedWords.map((chosenWord: string, idx: number) => (
                             <span
@@ -172,17 +179,24 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
                         ))}
                     </div>
 
-                    {/* Word bank remains similar but uses the new CSS */}
-                    <div className="word-bank">
-                        {availableWords.map((word, i) => (
-                            <button
-                                key={i}
-                                className="btn btn-outline-primary"
-                                onClick={() => handleWordSelect(word)}
-                            >
-                                {word}
-                            </button>
-                        ))}
+                    <div className="word-bank mb-3">
+                        {availableWords.map((word, i) => {
+                            const wordPosition = currentSentence?.sentence.findIndex(
+                                correctWord => correctWord.toLowerCase() === word.toLowerCase()
+                            ) ?? -1;
+
+                            const shouldGlow = wordPosition !== -1 && wordPosition < hintsToShow;
+
+                            return (
+                                <button
+                                    key={i}
+                                    className={`btn btn-outline-primary m-1 ${shouldGlow ? 'hint-glow' : ''}`}
+                                    onClick={() => handleWordSelect(word)}
+                                >
+                                    {word}
+                                </button>
+                            );
+                        })}
                     </div>
 
                     <button
