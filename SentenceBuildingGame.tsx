@@ -61,7 +61,12 @@ const SentenceBuildingGame: React.FC<GameProps> = ({ data, settings, onComplete 
 
     // Shuffle the word list to randomize the order
     const shuffleWords = (wordList: string[]) => {
-        return wordList.sort(() => Math.random() - 0.5);
+        const shuffled = [...wordList];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
     };
 
     // Handle word selection (adding words to the sentence)
