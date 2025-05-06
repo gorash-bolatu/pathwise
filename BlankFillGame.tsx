@@ -9,19 +9,26 @@ interface SentencePart {
     type: 'text' | 'blank';
     content: string;
 }
+interface Sentence {
+    parts: SentencePart[];
+    wordList: string[];
+    correctWords: string[];
+}
 
 const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     console.log("SpellingGame data:", data);
     console.log("SpellingGame settings:", settings);
 
     // Validate if data conforms to the expected structure (sentence_list array)
-    const isValidData = Array.isArray(data?.sentence_list) && data.sentence_list.every(sentence => {
-        const blankCount = sentence.parts.filter(p => p.type === 'blank').length;
-        return (
-            Array.isArray(sentence.correctWords) &&
-            sentence.correctWords.length === blankCount // Match blanks to answers
-        );
-    });
+    const isValidData = Array.isArray(data?.sentence_list) &&
+        data.sentence_list.every((sentence: Sentence, idx: number) => {
+            const blankCount = sentence.parts.filter(p => p.type === 'blank').length;
+            console.log(`Sentence ${idx}: blanks=${blankCount}, correctWords=${sentence.correctWords.length}`);
+            return (
+                Array.isArray(sentence.correctWords) &&
+                sentence.correctWords.length === blankCount
+            );
+        });
 
     if (!isValidData || data?.sentence_list?.length === 0) {
         return <div>No sentences provided for the game!</div>;
@@ -180,11 +187,13 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                                 <span
                                     key={i}
                                     className={`blank ${selectedWords[i] ? 'filled' : 'empty'} 
-                                    ${showHints(attemptCounts.current[currentSentence.correctWords[i]]) ? 'hint' : ''}`}
+                                    ${showHints(currentSentence.correctWords[i])
+                                        ? 'hint' : ''}`}
                                     style={{ width: selectedWords[i] ? `${selectedWords[i].length}ch` : 'auto' }}
                                     onClick={() => handleWordDeselect(i)}
                                 >
-                                    {showHints(attemptCounts.current[currentSentence.correctWords[i]])
+                                    {showHints(currentSentence.correctWords[i])
+
                                         ? currentSentence.correctWords[i]
                                         : selectedWords[i] || ''}
                                 </span>
