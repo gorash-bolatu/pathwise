@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import BaseGame from '../BaseGame';
 import { GameProps, GameResult } from '../../../interfaces/GameInterfaces';
 import './blank_game.css';
@@ -21,9 +21,8 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
 
     // Validate if data conforms to the expected structure (sentence_list array)
     const isValidData = Array.isArray(data?.sentence_list) &&
-        data.sentence_list.every((sentence: Sentence, idx: number) => {
+        data.sentence_list.every((sentence: Sentence) => {
             const blankCount = sentence.parts.filter(p => p.type === 'blank').length;
-            console.log(`Sentence ${idx}: blanks=${blankCount}, correctWords=${sentence.correctWords.length}`);
             return (
                 Array.isArray(sentence.correctWords) &&
                 sentence.correctWords.length === blankCount &&
@@ -38,16 +37,15 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     }
 
     // Initializing game state
-    const [queue, setQueue] = useState<Sentence[]>(data.sentence_list || []);
-
+    const [queue, setQueue] = useState<{ sentence: Sentence; mistakeCounter: number }[]>(data.sentence_list.map((sentence: any) => ({
+        sentence,
+        mistakeCounter: 0,  // Initialize mistake counter for each sentence
+    })));
     const [selectedWords, setSelectedWords] = useState<(string | null)[]>([]);
     const [availableWords, setAvailableWords] = useState<string[]>([]);
     const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
     const [completed, setCompleted] = useState(false);
     const [results, setResults] = useState<{ word: string; correct: boolean }[]>([]);
-
-    const attemptCounts = useRef<Record<string, number>>({});  // Track incorrect attempts for words
-    const isGameStarted = useRef(false);  // Track whether the game has been initialized
 
     // Difficulty and hint threshold setup
     type Difficulty = 'easy' | 'normal' | 'hard' | 'no-hints';
@@ -61,27 +59,17 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
 
     const revealThreshold = hintThresholds[difficulty] ?? 2;
 
-    const showHints = (word: string) => {
-        return (attemptCounts.current[word] ?? 0) >= revealThreshold;
+    const showHints = (sentence: { sentence: Sentence; mistakeCounter: number }) => {
+        return sentence.mistakeCounter >= revealThreshold;
     };
 
     // Initialize attempt counts only once when the game starts
     useEffect(() => {
-        if (queue.length > 0 && !isGameStarted.current) {
-            const initialCounts = queue[0].wordList.reduce((acc: Record<string, number>, word: string) => {
-                acc[word] = 0; // Initialize with 0 incorrect attempts for each word
-                return acc;
-            }, {} as Record<string, number>);
-            attemptCounts.current = initialCounts;
-            isGameStarted.current = true;
-        }
-    }, [queue]); // Runs only once when the game starts
-
-    useEffect(() => {
         if (queue.length > 0) {
-            const shuffled = shuffleWords(queue[0].wordList);
+            const current = queue[0].sentence;
+            const shuffled = shuffleWords(current.wordList);
             setAvailableWords(shuffled);
-            setSelectedWords(Array(queue[0].correctWords.length).fill(null));
+            setSelectedWords(Array(current.correctWords.length).fill(null));
         }
     }, [queue]);
 
@@ -124,35 +112,36 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
 
     // Handle check logic (answer validation)
     const handleCheck = () => {
-        const currentSentence = queue[0];
-        if (!currentSentence || selectedWords.some((w) => w === null)) return; // Ensure all blanks are filled
+        const currentSentenceObj = queue[0];
+        const currentSentence = currentSentenceObj.sentence;
+        if (!currentSentence || selectedWords.some((w) => w === null)) return;
 
-        // Validate each selected word against correct answers
         const validation = selectedWords.map((word, index) => ({
             word: word!,
             correct: word === currentSentence.correctWords[index],
         }));
 
-        const allCorrect = validation.every((v) => v.correct); // Check if all answers are correct
+        const allCorrect = validation.every((v) => v.correct);
         setFeedback(allCorrect ? 'correct' : 'wrong');
         setResults((prev) => [...prev, ...validation]);
 
-        // Update incorrect attempt counts for incorrect answers
-        validation.forEach((v, index) => {
-            if (!v.correct) {
-                const correctWord = currentSentence.correctWords[index];
-                attemptCounts.current[correctWord] = (attemptCounts.current[correctWord] || 0) + 1;
-            }
-        });
+        if (!allCorrect) {
+            // Increment the mistake counter for the current sentence immediately
+            const updatedQueue = [
+                { ...currentSentenceObj, mistakeCounter: currentSentenceObj.mistakeCounter + 1 },
+                ...queue.slice(1),
+            ];
+            setQueue(updatedQueue);
+        }
 
-        // Move to the next sentence or re-add current sentence if incorrect
         setTimeout(() => {
             if (allCorrect) {
                 const newQueue = queue.slice(1);
                 if (newQueue.length === 0) completeGame();
                 else setQueue(newQueue);
             } else {
-                setQueue([...queue.slice(1), queue[0]]);
+                // Move current (already updated) sentence to the end
+                setQueue(prev => [...prev.slice(1), prev[0]]);
             }
             setFeedback(null);
         }, 1000);
@@ -174,29 +163,36 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     // Render the current sentence with blanks
     const currentSentence = queue[0];
 
+    let blankIndex = 0;
     return (
         <BaseGame title="Fill the Blanks" description="Fill all blanks with correct words from the list">
             {!completed ? (
                 <div className={`gamearea ${feedback === 'correct' ? 'glow' : ''} ${feedback === 'wrong' ? 'shake' : ''}`}>
                     <div className="sentence mb-4">
-                        {currentSentence.parts.map((part, i) =>
-                            part.type === 'text' ? (
-                                <span key={i}>{part.content}</span>
-                            ) : (
-                                <span
-                                    key={i}
-                                    className={`blank ${selectedWords[i] ? 'filled' : 'empty'} 
-                                    ${showHints(currentSentence.correctWords[i]) ? 'hint' : ''}`}
-                                    style={{ width: selectedWords[i] ? `${selectedWords[i].length}ch` : 'auto' }}
-                                    onClick={() => handleWordDeselect(i)}
-                                >
-                                    {showHints(currentSentence.correctWords[i])
-
-                                        ? currentSentence.correctWords[i]
-                                        : selectedWords[i] || ''}
-                                </span>
-                            )
-                        )}
+                        {currentSentence.sentence.parts.map((part, i) => {
+                            if (part.type === 'text') {
+                                return <span key={i}>{part.content}</span>;
+                            } else {
+                                const idx = blankIndex++; // Increment and use separately
+                                return (
+                                    <span
+                                        key={i}
+                                        className={`blank ${selectedWords[idx] ? 'filled' : 'empty'} 
+                            ${showHints(currentSentence) ? 'hint' : ''}`}
+                                        style={{
+                                            width: selectedWords[idx] ? `${selectedWords[idx]!.length}ch` : 'auto',
+                                        }}
+                                        onClick={() => handleWordDeselect(idx)}
+                                    >
+                                        {selectedWords[idx] !== null
+                                            ? selectedWords[idx]  // Show selected word
+                                            : showHints(currentSentence)
+                                                ? currentSentence.sentence.correctWords[idx]
+                                                : ''}
+                                    </span>
+                                );
+                            }
+                        })}
                     </div>
 
                     <div className="word-bank mb-3">
