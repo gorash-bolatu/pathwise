@@ -26,7 +26,10 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
             console.log(`Sentence ${idx}: blanks=${blankCount}, correctWords=${sentence.correctWords.length}`);
             return (
                 Array.isArray(sentence.correctWords) &&
-                sentence.correctWords.length === blankCount
+                sentence.correctWords.length === blankCount &&
+                sentence.correctWords.every(cw =>
+                    sentence.wordList.includes(cw.toLowerCase())
+                ) // Ensure all correct words exist in wordList
             );
         });
 
@@ -35,11 +38,7 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
     }
 
     // Initializing game state
-    const [queue, setQueue] = useState<Array<{
-        parts: SentencePart[];
-        wordList: string[];
-        correctWords: string[];
-    }>>(data.sentence_list || []);
+    const [queue, setQueue] = useState<Sentence[]>(data.sentence_list || []);
 
     const [selectedWords, setSelectedWords] = useState<(string | null)[]>([]);
     const [availableWords, setAvailableWords] = useState<string[]>([]);
@@ -187,8 +186,7 @@ const BlankFillGame: React.FC<GameProps> = ({ data, settings, onComplete }) => {
                                 <span
                                     key={i}
                                     className={`blank ${selectedWords[i] ? 'filled' : 'empty'} 
-                                    ${showHints(currentSentence.correctWords[i])
-                                        ? 'hint' : ''}`}
+                                    ${showHints(currentSentence.correctWords[i]) ? 'hint' : ''}`}
                                     style={{ width: selectedWords[i] ? `${selectedWords[i].length}ch` : 'auto' }}
                                     onClick={() => handleWordDeselect(i)}
                                 >
