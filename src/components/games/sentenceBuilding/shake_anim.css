@@ -1,0 +1,41 @@
+.input-box, .word-bank {
+  transition: box-shadow 0.3s ease;
+}
+
+.input-box.correct, .word-bank.correct {
+  box-shadow: 0 0 10px 2px #4CAF50;
+}
+
+.input-box.wrong, .word-bank.wrong {
+  box-shadow: 0 0 10px 2px #F44336;
+  animation: shake 0.3s ease;
+}
+
+/* Shake animation for incorrect answer */
+@keyframes shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
+
+.shake {
+  animation: shake 0.5s;
+  border: 2px solid #dc3545 !important; /* red border */
+  border-radius: 1em;
+}
+
+/* Glow animation for correct answer */
+@keyframes glow {
+  0% { box-shadow: 0 0 0px rgba(40, 167, 69, 0); }
+  50% { box-shadow: 0 0 8px rgba(40, 167, 69, 0.7); }
+  100% { box-shadow: 0 0 0px rgba(40, 167, 69, 0); }
+}
+
+.glow {
+  animation: glow 0.8s ease-in-out;
+  border: 2px solid #28a745 !important; /* green border */
+  border-radius: 1em;
+}
